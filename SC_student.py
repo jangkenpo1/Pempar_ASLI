@@ -30,7 +30,7 @@ if rank == 0:
     X_uji_full = (X_uji_raw - X_min) / (X_max - X_min) 
     y_uji_full = data_uji['grade'].values 
 
-    # Memecah data menggunakan np.array_split (jauh lebih efisien)
+    # Memecah data menggunakan np.array_split 
     X_uji = np.array_split(X_uji_full, size) 
     Y_uji = np.array_split(y_uji_full, size) 
 
@@ -43,13 +43,13 @@ y_uji_lokal = comm.scatter(Y_uji, root=0)
 
 # 3. FUNGSI KNN
 def knn_klasifikasi(X_latih, y_latih, titik_baru, k):
-    # Hitung jarak Euclidean menggunakan kalkulasi vektor 
+    # Hitung jarak Euclidean 
     jarak = np.sqrt(np.sum((X_latih - titik_baru) ** 2, axis=1))
     
     # Ambil index dari K tetangga terdekat 
     idx_k = np.argpartition(jarak, k)[:k]
     
-    # Dapatkan label kandidat bedasarkan index
+    # Label kandidat bedasarkan index
     labels_k = y_latih[idx_k]
     
     # Menghitung suara dan menentukan label tebakan (Prediksi Final)

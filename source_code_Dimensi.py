@@ -13,25 +13,14 @@ X_uji   = None
 y_uji   = None
 
 if rank == 0:     
-    # 1. Tambahkan parameter decimal=',' agar Pandas tahu koma adalah desimal
     data_latih = pd.read_csv('star_classification_Latih.csv', sep=';', decimal=',') 
     data_uji   = pd.read_csv('star_classification_Uji.csv',   sep=';', decimal=',') 
 
     fitur = ['delta', 'u', 'g', 'r', 'i', 'z', 'redshift']
 
-    # 2. PENGAMAN TAMBAHAN: Ubah paksa semua fitur menjadi angka (float)
-    # Jika masih ada koma yang nyasar sebagai teks, kita replace dengan titik lewat kode ini
-    for kolom in fitur:
-        if data_latih[kolom].dtype == 'object':
-            data_latih[kolom] = data_latih[kolom].astype(str).str.replace(',', '.').astype(float)
-        if data_uji[kolom].dtype == 'object':
-            data_uji[kolom] = data_uji[kolom].astype(str).str.replace(',', '.').astype(float)
-
-    # 3. Baru ambil nilainya (sekarang dijamin 100% angka)
     X_latih_raw = data_latih[fitur].values 
     y_latih     = data_latih['class'].values 
 
-    # Lanjutkan normalisasi Min-Max seperti biasa ...
     X_min = X_latih_raw.min(axis=0) 
     X_max = X_latih_raw.max(axis=0) 
     X_latih = (X_latih_raw - X_min) / (X_max - X_min) 
@@ -40,7 +29,6 @@ if rank == 0:
     X_uji_full = (X_uji_raw - X_min) / (X_max - X_min) 
     y_uji_full = data_uji['class'].values 
 
-    # Memecah data menggunakan np.array_split (jauh lebih efisien)
     X_uji = np.array_split(X_uji_full, size) 
     y_uji = np.array_split(y_uji_full, size) 
 
@@ -53,26 +41,23 @@ y_uji_lokal = comm.scatter(y_uji, root=0)
 
 
 def knn_klasifikasi(X_latih, y_latih, titik_baru, k):
-    # Hitung jarak Euclidean menggunakan kalkulasi vektor (sangat cepat dibanding perulangan For)
+    # Hitung jarak Euclidean
     jarak = np.sqrt(np.sum((X_latih - titik_baru) ** 2, axis=1))
     
-    # Ambil index dari K tetangga terdekat (argpartition jauh lebih ringan dari penyortiran penuh)
-    # Pastikan k tetangga benar-benar k yang paling dekat
-    idx_k_kasar = np.argpartition(jarak, k)[:k]         # kandidat k terkecil
-    idx_k = idx_k_kasar[np.argsort(jarak[idx_k_kasar])] # urutkan ulang yang k itu
-    labels_k = y_latih[idx_k]
+    # Ambil index dari K tetangga terdekat 
+    idx_k = np.argpartition(jarak, k)[:k]
     
     # Dapatkan label kandidat bedasarkan index
     labels_k = y_latih[idx_k]
     
-    # Menghitung suara dan menentukan label tebakan (Prediksi Final)
+    # Menghitung suara dan menentukan label tebakan
     unik, jumlah = np.unique(labels_k, return_counts=True)
     prediksi_final = unik[np.argmax(jumlah)]
             
     return prediksi_final
 
 # 4. EKSEKUSI PARALEL
-K = 10  
+K = 9  
 benar_lokal = 0
 jumlah_data_lokal = len(X_uji_lokal)
 
