@@ -13,8 +13,7 @@ X_uji   = None
 Y_uji   = None
 
 if rank == 0:     
-
-    data_latih = pd.read_csv('data_latih.csv', sep=';', nrows=100000) 
+    data_latih = pd.read_csv('data_latih.csv', sep=';', nrows=300000) 
     data_uji   = pd.read_csv('data_uji.csv',   sep=';') 
 
     fitur = ['weekly_self_study_hours', 'attendance_percentage', 'class_participation'] 
@@ -33,6 +32,9 @@ if rank == 0:
     # Memecah data menggunakan np.array_split 
     X_uji = np.array_split(X_uji_full, size) 
     Y_uji = np.array_split(y_uji_full, size) 
+
+comm.Barrier()
+start_time = time.time()
 
 # 2. BROADCAST & SCATTER
 X_latih = comm.bcast(X_latih, root=0)
@@ -59,12 +61,9 @@ def knn_klasifikasi(X_latih, y_latih, titik_baru, k):
     return prediksi_final
 
 # 4. EKSEKUSI PARALEL
-K = 5  
+K = 9  
 benar_lokal = 0
 jumlah_data_lokal = len(X_uji_lokal)
-
-comm.Barrier()
-start_time = time.time()
 
 for i in range(jumlah_data_lokal):
     titik_baru = X_uji_lokal[i]
